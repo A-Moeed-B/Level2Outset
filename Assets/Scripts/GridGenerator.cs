@@ -23,8 +23,8 @@ public class GridGenerator : MonoBehaviour
     public int endPositionX, endPositionY;
    
     public int noOfColors;
-    Color []colors;
-    Dictionary<Color, GamePoint> gamePointDict;
+    public Color []colors;
+    public Dictionary<Color, GamePoint> gamePointDict;
 
     private void Awake()
     {
@@ -60,6 +60,7 @@ public class GridGenerator : MonoBehaviour
         {
             GamePoint point;
             gamePointDict.TryGetValue(colors[a], out point);
+
             Debug.Log("Color: " + colors[a].ToString() + "Starting Node X:" + point.startingNode.x +"Y:"+ point.startingNode.y);
             Debug.Log("Color: " + colors[a].ToString() + "Ending Node X " + point.endingNode.x +"Y:"+ point.endingNode.y);
         }
@@ -81,20 +82,6 @@ public class GridGenerator : MonoBehaviour
         
         changeTileColor(startX, startY,color);
         changeTileColor(endX, endY,color);
-        nodes[startX, startY].isGamePoint = true;
-        nodes[endX, endY].isGamePoint = true;
-        nodes[startX, startY].isColored = true;
-        nodes[endX, endY].isColored = true;
-        setHead(startX, startY);
-        setHead(endX, endY);
-        i = startX;
-        j = startY;
-    }
-    void generateGamePoint(ref int startX,ref int startY, ref int endX,ref int endY )
-    {
-        setRandomNumbers(ref startX, ref startY, ref endX, ref endY);
-        changeTileColor(startX, startY);
-        changeTileColor(endX, endY);
         nodes[startX, startY].isGamePoint = true;
         nodes[endX, endY].isGamePoint = true;
         nodes[startX, startY].isColored = true;
@@ -288,6 +275,11 @@ public class GridGenerator : MonoBehaviour
     void Update()
     {
         //move();
+        // if (!PathFinding.finalResult)
+        //{
+        //    regenerateValues();
+           
+        //}
         if(Input.GetMouseButtonDown(0))
         {
             
@@ -315,16 +307,43 @@ public class GridGenerator : MonoBehaviour
             //nodes[Mathf.RoundToInt(worldPosition.x), Mathf.RoundToInt(worldPosition.y)].isHead = false;
          
         }
-        if (PathFinding.resultFound)
+        //if (PathFinding.resultFound)
+        //{
+        //    for (int a = 0; a < path.Count; a++)
+        //        path[a].renderer.color = Color.red;
+        //    nodes[startPositionX, startPositionY].isColored = true;
+        //    nodes[endPositionX, endPositionY].isColored = true;
+        //}
+        //if(PathFinding.resultsFound[PathFinding.currentIndex])
+        //{
+        //    for (int a = 0; a < path.Count; a++)
+        //        path[a].renderer.color = colors[PathFinding.currentIndex];
+        //    for (int a = 0; a < noOfColors; a++)
+        //    {
+        //        GamePoint point;
+        //        gamePointDict.TryGetValue(colors[i], out point);
+        //       nodes[point.startingNode.x, point.startingNode.y].isColored = true;
+        //       nodes[point.endingNode.x, point.endingNode.y].isColored = true;
+        //    }
+        //}
+    }
+    public void setPathColor(List<Node> path,int currentIndex,bool[] resultsFound)
+    {
+        if (resultsFound[currentIndex])
         {
             for (int a = 0; a < path.Count; a++)
-                path[a].renderer.color = Color.red;
-            nodes[startPositionX, startPositionY].isColored = true;
-            nodes[endPositionX, endPositionY].isColored = true;
+            {
+                path[a].renderer.color = colors[currentIndex];
+                path[a].isColored = true;
+            }
+
+            GamePoint point;
+            gamePointDict.TryGetValue(colors[currentIndex], out point);
+            nodes[point.startingNode.x, point.startingNode.y].isColored = true;
+            nodes[point.endingNode.x, point.endingNode.y].isColored = true;
+            path.Clear();
         }
     }
-  
-   
     void generateGrid()
     {
 
@@ -343,12 +362,7 @@ public class GridGenerator : MonoBehaviour
         transform.position = new Vector2(-(columns * tileSize) / 2 + tileSize / 2, (rows + tileSize) / 2 - tileSize / 2);
     }
     //helper functions
-    void changeTileColor(int x, int y)
-    {
-        renderer = tiles[x, y].GetComponent<SpriteRenderer>();
-        nodes[x, y].isColored = true;
-        renderer.color = Color.red;
-    }
+  
     void changeTileColor(int x, int y, Color color)
     {
         renderer = tiles[x, y].GetComponent<SpriteRenderer>();
@@ -373,7 +387,6 @@ public class GridGenerator : MonoBehaviour
     public List<Node> generateNeighbours(Node node)
     {
         Debug.Log("In Generate Neighbours");
-
         List<Node> neighbours = new List<Node>();
 
         for (int a = -1; a <= 1; a++)
@@ -392,8 +405,6 @@ public class GridGenerator : MonoBehaviour
                     continue;
                 else if (node.x - 1 == checkX && node.y + 1 == checkY)
                     continue;
-      
-
                 if (checkX>=0&&checkX<rows&&checkY>=0&&checkY<columns)
                 {
                     //if ((checkX == startPositionX && checkY == startPositionY) || (checkX == endPositionX && checkY == endPositionY))
@@ -462,8 +473,6 @@ public class GridGenerator : MonoBehaviour
         //wtf ??
         //FIX RANDOMIZER!!
         //dont put seed in this randomizer. it breaks
-
-
         startX = Random.Range(0, rows);
         startY = Random.Range(0, columns);
         endX = Random.Range(0, rows);
@@ -471,12 +480,12 @@ public class GridGenerator : MonoBehaviour
         //maybe add more conditions so start and end dont spawn next to each other.
         //this barely works.
         //also recursive calls???
-
         // Debug.Log("Random Numbers are : a" +a + "b" + b + "c" + c + "d" + d);
         if ((startX == endX) && (startY == endY))
             setRandomNumbers(ref startX, ref startY, ref endX, ref endY);
         else
             return;
     }
+    
 
 }

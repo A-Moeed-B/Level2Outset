@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PathFinding : MonoBehaviour
@@ -6,10 +7,12 @@ public class PathFinding : MonoBehaviour
     GridGenerator grid;
     public static bool resultFound;
     public static bool[] resultsFound;
-
+    public static bool finalResult;
+    public static int currentIndex;
     private void Awake()
     {
         resultFound = false;
+        finalResult = false;
         grid = GetComponent<GridGenerator>();
         resultsFound = new bool[grid.noOfColors];
         for (int i = 0; i < grid.noOfColors; i++)
@@ -18,18 +21,53 @@ public class PathFinding : MonoBehaviour
         }
 
     }
+    public void Start()
+    {
+        if(!finalResult)
+        {
+            setPathfindingPoints(grid.gamePointDict, grid.colors);
+        }
+    }
     public void Update()
     {
+
       
     }
     public void findPath()
     {
-        if (!resultFound)
+        //if (!resultFound)
+        //{
+           
+        //    grid.nodes[grid.startPositionX, grid.startPositionY].isColored = false;
+        //    grid.nodes[grid.endPositionX, grid.endPositionY].isColored = false;
+        //    findPath(grid.nodes[grid.startPositionX, grid.startPositionY], grid.nodes[grid.endPositionX, grid.endPositionY]);
+        //}
+        if(!finalResult)
         {
-            grid.nodes[grid.startPositionX, grid.startPositionY].isColored = false;
-            grid.nodes[grid.endPositionX, grid.endPositionY].isColored = false;
-            findPath(grid.nodes[grid.startPositionX, grid.startPositionY], grid.nodes[grid.endPositionX, grid.endPositionY]);
+            setPathfindingPoints(grid.gamePointDict, grid.colors);
+
         }
+            
+        
+        Debug.Log("Final Result: All Paths Found" + finalResult);
+       
+    }
+    public void setPathfindingPoints(Dictionary<Color, GamePoint> pointDict,Color [] colors)
+    {
+        for(int i=0;i<colors.Length; i++)
+        {
+            currentIndex=i;
+            GamePoint point;
+            pointDict.TryGetValue(colors[i], out point);
+            grid.nodes[point.startingNode.x, point.startingNode.y].isColored = false;
+            grid.nodes[point.endingNode.x, point.endingNode.y].isColored = false;
+            findPath(grid.nodes[point.startingNode.x, point.startingNode.y], grid.nodes[point.endingNode.x, point.endingNode.y]);
+            
+        }
+        if (resultsFound.All(x => x))
+            finalResult = true;
+        if (!finalResult)
+            grid.regenerateValues();
     }
     public void findPath(Node startNode, Node endNode)
     {
@@ -45,7 +83,6 @@ public class PathFinding : MonoBehaviour
                 if (openList[i].fCost < currentNode.fCost || openList[i].fCost == currentNode.fCost && openList[i].hCost < currentNode.hCost)
                 {
                     currentNode = openList[i];
-
                 }
             }
             openList.Remove(currentNode);
@@ -53,7 +90,10 @@ public class PathFinding : MonoBehaviour
             if (currentNode == endNode)
             {
                 Debug.Log("Result Found!");
+                resultsFound[currentIndex] = true;
                 retracePath(startNode, endNode);
+                
+                Debug.Log("Result Found for " + grid.colors[currentIndex].ToString());
                 resultFound = true;
                 return;
             }
@@ -74,7 +114,6 @@ public class PathFinding : MonoBehaviour
                 {
                     neighbour.gCost = movementCostToNeighbour;
                     neighbour.hCost = getDistance(neighbour, endNode);
-                 
                     neighbour.parent = currentNode;
                     //if ((neighbour.x == grid.startPositionX && neighbour.y == grid.startPositionY) ||( neighbour.x == grid.endPositionX || neighbour.y == grid.endPositionY)
                     //    continue;
@@ -99,9 +138,12 @@ public class PathFinding : MonoBehaviour
         }
         path.Reverse();
         grid.path = path;
+
+        grid.setPathColor(path, currentIndex, resultsFound);
         Debug.Log("Out of Retrace Path While");
 
     }
+
     int getDistance(Node startNode, Node endNode)
     {
 
