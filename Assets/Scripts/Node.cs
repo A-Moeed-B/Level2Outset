@@ -42,11 +42,9 @@ public class Node
     {
         this.renderer = renderer;
     }
-    public bool isSameColored(Node node)
+    public bool isSameColored(Color color)
     {
-        if (color == node.color)
-            return true;
-        return false;
+        return renderer.color.r == color.r && renderer.color.g == color.g && renderer.color.b == color.b && renderer.color.a == color.a;
     }
     public void setColor(Color color)
     {

@@ -69,6 +69,7 @@ public class PathFinding : MonoBehaviour
         if (!finalResult)
             grid.regenerateValues();
     }
+   
     public void findPath(Node startNode, Node endNode)
     {
 
@@ -115,8 +116,6 @@ public class PathFinding : MonoBehaviour
                     neighbour.gCost = movementCostToNeighbour;
                     neighbour.hCost = getDistance(neighbour, endNode);
                     neighbour.parent = currentNode;
-                    //if ((neighbour.x == grid.startPositionX && neighbour.y == grid.startPositionY) ||( neighbour.x == grid.endPositionX || neighbour.y == grid.endPositionY)
-                    //    continue;
                     if (!openList.Contains(neighbour))
                         openList.Add(neighbour);
                 }

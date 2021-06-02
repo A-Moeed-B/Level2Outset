@@ -16,7 +16,7 @@ public class BackgroundController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log("Background " + backSpeed);
+       // Debug.Log("Background " + backSpeed);
         float x = Time.time * backSpeed;
         Vector2 offset = new Vector2(x, 0);
         renderer.sharedMaterial.SetTextureOffset("_MainTex",offset);
