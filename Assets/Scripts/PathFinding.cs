@@ -25,7 +25,7 @@ public class PathFinding : MonoBehaviour
     {
         if(!finalResult)
         {
-            setPathfindingPoints(grid.gamePointDict, grid.colors);
+            //setPathfindingPoints(grid.gamePointDict, grid.colors);
         }
     }
     public void Update()

@@ -16,12 +16,11 @@ public class GridGenerator : MonoBehaviour
     public GameObject[,] tiles;
     public Node[,] nodes;
     public List<Node> path;
-    int i, j;
     [HideInInspector]
     public int startPositionX, startPositionY;
     [HideInInspector]
     public int endPositionX, endPositionY;
-   
+    Node currentNode;
     public int noOfColors;
     public Color []colors;
     public Dictionary<Color, GamePoint> gamePointDict;
@@ -29,6 +28,7 @@ public class GridGenerator : MonoBehaviour
     GamePoint gp2;
     List<Node> pathRed = new List<Node>();
     Color currentColor;
+    List<Node> currentPath;
     private void Awake()
     {
         //noOfColors = (Random.Range(rows - 1, rows + 1));
@@ -53,7 +53,37 @@ public class GridGenerator : MonoBehaviour
         nodes[0, 4].isGamePoint = true;
         gp2.startingNode = nodes[4, 0];
         gp2.endingNode = nodes[0,4];
+        gamePointDict = new Dictionary<Color, GamePoint>();
+        colors= new Color []{ Color.red, Color.yellow };
+        gamePointDict.Add(Color.red, gp);
+        gamePointDict.Add(Color.yellow, gp2);
+        currentPath = new List<Node>();
         currentColor = new Color();
+    }
+    bool checkColors(Color firstColor, Color secondColor)
+    {
+
+        return firstColor.r == secondColor.r && firstColor.g == secondColor.g && firstColor.b == secondColor.b && firstColor.a == secondColor.a;
+    }
+   
+    void checkPathValidity(Color color)
+    {
+        GamePoint currentGamePoint = new GamePoint();
+        gamePointDict.TryGetValue(color, out currentGamePoint);
+        List<Node> path = new List<Node>();
+        path = currentGamePoint.path;
+        if(path[path.Count-1]!=currentGamePoint.endingNode)
+        {
+            if(path.Count>1)
+            {
+                for (int i = 1; i < path.Count; i++)
+                {
+                    changeTileColor(path[i], Color.white);
+                    path[i].isColored = false;
+                }
+            }
+        }
+        path.Clear();
     }
     bool isSameColored(Node firstNode, Node secondNode)
     {
@@ -102,27 +132,77 @@ public class GridGenerator : MonoBehaviour
             Touch touch = Input.GetTouch(0);
             if(touch.phase==TouchPhase.Moved)
             {
-                Node currentNode = nodeFromPosition(gameObject.transform.InverseTransformPoint(Camera.main.ScreenToWorldPoint(touch.position)));
+                currentNode = nodeFromPosition(gameObject.transform.InverseTransformPoint(Camera.main.ScreenToWorldPoint(touch.position)));
                 Debug.Log("Current Node: X:" + currentNode.x + " Y:" + currentNode.y);
                 //Debug.Log("Color: " + currentColor.ToString());
+                
                 if(isGamePoint(currentNode))
                 {
                     currentColor = getColor(currentNode);
                 }
-                if (isGamePoint(currentNode)|| (isAdjacent(currentNode.x, currentNode.y,currentColor)&&pathRed.Count>0))
+                   
+                if ((isGamePoint(currentNode)&&currentPath.Count==0)|| (isAdjacent(currentNode.x, currentNode.y,currentColor)&& currentPath.Count>0))
                 {
+                    Debug.Log("In this function");
                     changeTileColor(currentNode, currentColor);
-                    if (!pathRed.Contains(currentNode))
-                        pathRed.Add(currentNode);
+                    Debug.Log(" By this point color should be changed");
+                    if (!currentPath.Contains(currentNode))
+                    {
+                        currentPath.Add(currentNode);
+                        gamePointDict[currentColor].path = currentPath;
+                    }
+                    checkPathCollision();
                 }
                 else
-                    checkPathValidity();
+                    checkPathValidity(currentColor);
             }
             if (touch.phase == TouchPhase.Ended)
-                checkPathValidity();
+            {  
+                checkPathValidity(currentColor);
+                currentPath.Clear();
+            }
         }
         //if(pathRed.Contains(gp.startingNode))
         //    checkPathValidity();
+    }
+    public void checkPathCollision()
+    {
+        GamePoint currentGamePoint = new GamePoint();
+        gamePointDict.TryGetValue(currentColor, out currentGamePoint);
+        List<Node> collisionPath = new List<Node>();
+        collisionPath = currentGamePoint.path;
+        Debug.Log("in path collision function");
+        for (int i = 0; i < 2; i++)
+        {
+            GamePoint gamePoint = gamePointDict[colors[i]];
+            if (gamePoint.path.Contains(currentNode) && !checkColors(currentColor, colors[i]))
+            {
+                Debug.Log("iam here");
+                for (int j = 1; j < 1 - gamePoint.path.Count; j++)
+                {
+                    changeTileColor(gamePoint.path[j], Color.white);
+                    gamePoint.path[i].isColored = false;
+                }
+                gamePoint.path.Clear();
+            }
+        }
+    }
+
+    void move(Node node)
+    {
+        if (isGamePoint(node))
+            currentColor = getColor(node);
+        List <Node> path= new List<Node>();
+        if (isGamePoint(node) || (isAdjacent(node.x, node.y, currentColor) && path.Count > 0))
+        {
+            changeTileColor(node, currentColor);
+            if (!path.Contains(node))
+                path.Add(node);
+            gamePointDict[currentColor].path = path;
+        }
+        else
+            checkPathValidity(currentColor);
+        
     }
     /***
      *
@@ -149,11 +229,9 @@ public class GridGenerator : MonoBehaviour
 
     void changeTileColor(Node node,Color color)
     {
+        Debug.Log("In change color");
         node.renderer.color = color;
         node.isColored = true;
-        
-        
-       
     }
     bool isGamePoint(Node node)
     {
@@ -197,8 +275,7 @@ public class GridGenerator : MonoBehaviour
         nodes[endX, endY].isColored = true;
         setHead(startX, startY);
         setHead(endX, endY);
-        i = startX;
-        j = startY;
+     
     }
    
     //stop this much overloading??
@@ -391,22 +468,22 @@ public class GridGenerator : MonoBehaviour
             Vector3 worldPosition = gameObject.transform.InverseTransformPoint(Camera.main.ScreenToWorldPoint(mouseInput));
             //Debug.Log("Original value x "+worldPosition.x);
             //Debug.Log("Original value y "+worldPosition.y);
-            Debug.Log("Previous X: " + i + "Previous Y: " + j);
-            Debug.Log("Rounded value x " + Mathf.RoundToInt(worldPosition.x));
-            Debug.Log("Rounded Value y " + Mathf.RoundToInt(worldPosition.y));
+            //Debug.Log("Previous X: " + i + "Previous Y: " + j);
+            //Debug.Log("Rounded value x " + Mathf.RoundToInt(worldPosition.x));
+            //Debug.Log("Rounded Value y " + Mathf.RoundToInt(worldPosition.y));
 
             //i,j is the previous index.
-            if (nodes[i, j].isHead)//if previous clicked is the head
-            {
-                Debug.Log("Current head is " + nodes[i, j].isHead);
-                move(Mathf.RoundToInt(worldPosition.x), -(Mathf.RoundToInt(worldPosition.y)));
-                //then set previous head to false;
-                i = Mathf.RoundToInt(worldPosition.x);
-                j = -(Mathf.RoundToInt(worldPosition.y));//take current clicked value
-                setHead(i, j);//set current clicked value as the head.
-                Debug.Log("New head is " + nodes[i, j].isHead);
+            //if (nodes[i, j].isHead)//if previous clicked is the head
+            //{
+            //    Debug.Log("Current head is " + nodes[i, j].isHead);
+            //    move(Mathf.RoundToInt(worldPosition.x), -(Mathf.RoundToInt(worldPosition.y)));
+            //    //then set previous head to false;
+            //    i = Mathf.RoundToInt(worldPosition.x);
+            //    j = -(Mathf.RoundToInt(worldPosition.y));//take current clicked value
+            //    setHead(i, j);//set current clicked value as the head.
+            //    Debug.Log("New head is " + nodes[i, j].isHead);
 
-            }
+            //}
             //nodes[Mathf.RoundToInt(worldPosition.x), Mathf.RoundToInt(worldPosition.y)].isHead = false;
 
         }
