@@ -31,6 +31,10 @@ public class Node
         isColored = false;
         isClicked = false;
     }
+    public Color getColor()
+    {
+        return color;
+    }
     public int fCost
     {
         get
