@@ -25,7 +25,7 @@ public class PathFinding : MonoBehaviour
     {
         if(!finalResult)
         {
-            //setPathfindingPoints(grid.gamePointDict, grid.colors);
+            setPathfindingPoints(grid.gamePointDict, grid.colors);
         }
     }
     public void Update()
@@ -44,7 +44,7 @@ public class PathFinding : MonoBehaviour
         //}
         if(!finalResult)
         {
-            setPathfindingPoints(grid.gamePointDict, grid.colors);
+            //setPathfindingPoints(grid.gamePointDict, grid.colors);
 
         }
             
@@ -65,7 +65,10 @@ public class PathFinding : MonoBehaviour
             
         }
         if (resultsFound.All(x => x))
+        {
             finalResult = true;
+            grid.resetColoredValues();
+        }
         if (!finalResult)
             grid.regenerateValues();
     }
@@ -90,22 +93,22 @@ public class PathFinding : MonoBehaviour
             closedList.Add(currentNode);
             if (currentNode == endNode)
             {
-                Debug.Log("Result Found!");
+                //Debug.Log("Result Found!");
                 resultsFound[currentIndex] = true;
                 retracePath(startNode, endNode);
                 
-                Debug.Log("Result Found for " + grid.colors[currentIndex].ToString());
+                //Debug.Log("Result Found for " + grid.colors[currentIndex].ToString());
                 resultFound = true;
                 return;
             }
-            Debug.Log("Before the FOREACH LOOP");
+            //Debug.Log("Before the FOREACH LOOP");
             foreach (Node neighbour in grid.generateNeighbours(currentNode))
             {
                 //||!grid.isAdjacent(neighbour.x,neighbour.y)
-                Debug.Log("In Foreach loop");
+                //Debug.Log("In Foreach loop");
                 if (neighbour.isColored || closedList.Contains(neighbour)) 
                 {
-                    Debug.Log("Blockage Found at " +neighbour.x+" "+neighbour.y);
+                    //Debug.Log("Blockage Found at " +neighbour.x+" "+neighbour.y);
                     continue;
                 }
                 int movementCostToNeighbour = currentNode.gCost + getDistance(currentNode, neighbour);
@@ -119,7 +122,7 @@ public class PathFinding : MonoBehaviour
                     if (!openList.Contains(neighbour))
                         openList.Add(neighbour);
                 }
-                Debug.Log("In Foreach loop");
+                //Debug.Log("In Foreach loop");
 
             }
         } 
@@ -128,18 +131,18 @@ public class PathFinding : MonoBehaviour
     {
         List<Node> path = new List<Node>();
         Node currentNode = endNode;
-        Debug.Log("In retrace path");
+        //Debug.Log("In retrace path");
         while (currentNode != startNode)
         {
-            Debug.Log("In retrace path while");
+            //Debug.Log("In retrace path while");
             path.Add(currentNode);
             currentNode = currentNode.parent;
         }
         path.Reverse();
-        grid.path = path;
+        grid.pathfindingPath = path;
 
         grid.setPathColor(path, currentIndex, resultsFound);
-        Debug.Log("Out of Retrace Path While");
+        //Debug.Log("Out of Retrace Path While");
 
     }
 

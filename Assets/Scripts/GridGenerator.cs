@@ -15,7 +15,7 @@ public class GridGenerator : MonoBehaviour
     private float tileSize = 1;
     public GameObject[,] tiles;
     public Node[,] nodes;
-    public List<Node> path;
+    public List<Node> pathfindingPath;
     [HideInInspector]
     public int startPositionX, startPositionY;
     [HideInInspector]
@@ -30,14 +30,37 @@ public class GridGenerator : MonoBehaviour
     Color currentColor;
     List<Node> currentPath;
     Color collisionColor;
- 
+    bool colorTaken;
+
     private void Awake()
     {
         //noOfColors = (Random.Range(rows - 1, rows + 1));
+        startingSetup();
+        //movementDebugStartConditions();
+        
+    }
+    void debug()
+    {
+        Debug.Log("In Debug Function");
+        for (int i = 0; i < columns; i++)
+            for (int j = 0; j < rows; j++)
+                if (nodes[i, j].renderer == null)
+                    Debug.Log("Problem at X: " + i + "Y: " + j);
+        for (int i=0;i<noOfColors;i++)
+        {
+            Debug.Log("Game Points Starting X:" + gamePointDict[colors[i]].startingNode.x + "Y: " + gamePointDict[colors[i]].startingNode.y);
+            Debug.Log("Game Points Ending X:" + gamePointDict[colors[i]].endingNode.x + "Y: " + gamePointDict[colors[i]].endingNode.y);
+            gamePointDict[colors[i]].startingNode.renderer.color = Color.black;
+            nodes[gamePointDict[colors[i]].startingNode.x, gamePointDict[colors[i]].startingNode.y].renderer.color = Color.black;
+        }
+    }
+  
+    void movementDebugStartConditions()
+    {
         tiles = new GameObject[rows, columns];
         nodes = new Node[rows, columns];
         generateGrid();
-        gp=new GamePoint();
+        gp = new GamePoint();
         gp2 = new GamePoint();
         gp.startingNode = nodes[0, 0];
         nodes[0, 0].renderer.color = Color.red;
@@ -54,16 +77,18 @@ public class GridGenerator : MonoBehaviour
         nodes[0, 4].isColored = true;
         nodes[0, 4].isGamePoint = true;
         gp2.startingNode = nodes[4, 0];
-        gp2.endingNode = nodes[0,4];
+        gp2.endingNode = nodes[0, 4];
         gamePointDict = new Dictionary<Color, GamePoint>();
-        colors= new Color []{ Color.red, Color.yellow };
+        colors = new Color[] { Color.red, Color.yellow };
         gamePointDict.Add(Color.red, gp);
         gamePointDict.Add(Color.yellow, gp2);
         currentPath = new List<Node>();
         currentColor = new Color();
         currentNode = new Node();
         collisionColor = new Color();
+        colorTaken = false;
     }
+    
     bool checkColors(Color firstColor, Color secondColor)
     {
 
@@ -77,18 +102,29 @@ public class GridGenerator : MonoBehaviour
         List<Node> path = new List<Node>();
         path = currentGamePoint.path;
         if(path.Count!=0)
-            if(path[path.Count-1]!=currentGamePoint.endingNode)
+            if(!checkGamePositions(path[path.Count-1],color))
             {
                 if(path.Count>1)
                 {
                     for (int i = 0; i < path.Count; i++)
                     {
+                        if (path[i] == currentGamePoint.startingNode || path[i] == currentGamePoint.endingNode)
+                        {
+                            if (path[i] == currentGamePoint.startingNode)
+                            {
+                                Debug.Log("Index: " + i);
+                                Debug.Log("Total Count" + path.Count);
+                            }
+                            continue;
+                           
+                        }
                         changeTileColor(path[i], Color.white);
                         path[i].isColored = false;
                     }
                 }
             }
         path.Clear();
+  
         
     }
     bool isSameColored(Node firstNode, Node secondNode)
@@ -97,23 +133,51 @@ public class GridGenerator : MonoBehaviour
     }
     void startingSetup()
     {
-        gamePointDict = new Dictionary<Color, GamePoint>();
-        noOfColors = 5;
-        colors = new Color[] { Color.red, Color.green, Color.yellow, Color.blue, Color.cyan };
         tiles = new GameObject[rows, columns];
         nodes = new Node[rows, columns];
         generateGrid();
+        gamePointDict = new Dictionary<Color, GamePoint>();
+        noOfColors = 4;
+        colors = new Color[] { Color.red, Color.green, Color.yellow, Color.blue };
+        pathfindingPath = new List<Node>();
         generateAllStartingPoints();
-        path = new List<Node>();
+        currentPath = new List<Node>();
+        currentColor = new Color();
+        currentNode = new Node();
+        colorTaken = false;
+        //debug();
+    }
+    bool checkGamePositions(Node node,Color color)
+    {
+        if (node == gamePointDict[color].startingNode || node == gamePointDict[color].endingNode)
+        {
+            Debug.Log("This is true");
+            return true;
+        }
+        Debug.Log("This is false");
+        return false;
     }
     void generateGamePointColors()
     {
-        Debug.Log("In Generate GamePoint Colors");
+        //Debug.Log("In Generate GamePoint Colors");
         GamePoint[] gpArray = new GamePoint[noOfColors];
         gpArray = checkGamePoint();
         for (int a=0;a<noOfColors;a++)
         {
-            gamePointDict.Add(colors[a], gpArray[a]);
+            if (!gamePointDict.ContainsKey(colors[a]))
+            {
+                gamePointDict.Add(colors[a], gpArray[a]);
+                if(gamePointDict[colors[a]].startingNode.renderer==null)
+                {
+                    //Debug.Log("WTF IS THIS SHIT");
+                }
+                //changeTileColor(gamePointDict[colors[a]].startingNode, colors[a]);
+                //changeTileColor(gamePointDict[colors[a]].endingNode, colors[a]);
+                //Debug.Log("Game Points Starting X:" + gamePointDict[colors[a]].startingNode.x + "Y: " + gamePointDict[colors[a]].startingNode.y);
+                //Debug.Log("Game Points Ending X:" + gamePointDict[colors[a]].endingNode.x + "Y: " + gamePointDict[colors[a]].endingNode.y);
+            }
+            else
+                continue;
         }
         GamePoint testpoint;
         gamePointDict.TryGetValue(Color.red, out testpoint);
@@ -123,51 +187,71 @@ public class GridGenerator : MonoBehaviour
         endPositionY = testpoint.endingNode.y;
      
     }
+    bool checkSameGamePoint(Node node,Color color)
+    {
+        if (node == gamePointDict[color].startingNode || node == gamePointDict[color].endingNode)
+            return true;
+        return false;
+    }
     void Update()
     {
         if (Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
 
-            if(touch.phase==TouchPhase.Moved)
+            if (touch.phase == TouchPhase.Moved)
             {
                 currentNode = nodeFromPosition(gameObject.transform.InverseTransformPoint(Camera.main.ScreenToWorldPoint(touch.position)));
                 //Debug.Log("Color: " + currentColor.ToString());
                 //checkPathCollision();
                 //Debug.Log("Current Node is colored:" + currentNode.isColored);
-                if(isGamePoint(currentNode))
+                checkPathCollision();
+                if (isGamePoint(currentNode) && !colorTaken)
                 {
                     currentColor = getColor(currentNode);
+                    colorTaken = true;
                 }
-                
-                if ((isGamePoint(currentNode)&&currentPath.Count==0)|| (isAdjacent(currentNode.x, currentNode.y,currentColor)&& currentPath.Count>0))
+                if ((isGamePoint(currentNode) && !checkSameGamePoint(currentNode, currentColor)) && colorTaken)
                 {
-                   //Debug.Log("In this function");
+                    Debug.Log("Error is here");
+                    checkPathValidity(currentColor);
+                }
+
+                if ((isGamePoint(currentNode) && currentPath.Count == 0) || (isAdjacent(currentNode.x, currentNode.y, currentColor) && currentPath.Count > 0))
+                {
+                    //Debug.Log("In this function");
                     changeTileColor(currentNode, currentColor);
                     //Debug.Log(" By this point color should be changed");
                     if (!currentPath.Contains(currentNode))
                     {
                         currentPath.Add(currentNode);
                         gamePointDict[currentColor].path.Add(currentNode);
-                        Debug.Log("Current Color RED  path has nodes: " + gamePointDict[currentColor].path.Count.ToString());
+                        //Debug.Log("Current Color RED  path has nodes: " + gamePointDict[currentColor].path.Count.ToString());
                     }
-                    
+
                 }
                 else
+                {
+                   
                     checkPathValidity(currentColor);
+                }
+                    
             }
             if (touch.phase == TouchPhase.Ended)
             {
                 //checkPathValidity(currentColor);
-                if (currentPath[currentPath.Count - 1] != gamePointDict[currentColor].endingNode)
+                if (!checkGamePositions(currentPath[currentPath.Count - 1], currentColor))
+                {
+                    //Debug.Log("Third Error");
                     checkPathValidity(currentColor);
-                Debug.Log("Current Color RED path has nodes: "+ gamePointDict[currentColor].path.Count.ToString());
-                Debug.Log("Current path has Nodes:" + currentPath.Count.ToString());
+
+                }
+                //Debug.Log("Current Color RED path has nodes: " + gamePointDict[currentColor].path.Count.ToString());
+                //Debug.Log("Current path has Nodes:" + currentPath.Count.ToString());
                 currentPath.Clear();
+                colorTaken = false;
             }
         }
-        //if(pathRed.Contains(gp.startingNode))
-        //    checkPathValidity();
     }
   
     public void checkPathCollision()
@@ -176,40 +260,31 @@ public class GridGenerator : MonoBehaviour
         {
             if (currentNode.isColored && !isSameColored(currentNode, currentPath[0]))
             {
-                Debug.Log("Current Node is X:" + currentNode.x + "Y: " + currentNode.y);
-                Debug.Log("Color of current node is: " + currentNode.renderer.color.ToString());
-                changePathColor(gamePointDict[Color.red].path, Color.black);
+                changePathColor(gamePointDict[currentNode.renderer.color].path, Color.white,currentNode.renderer.color);
                 
             }
         }
     }
-    void changePathColor(List<Node> path,Color color)
+    void changePathColor(List<Node> path,Color color,Color dictColor)
     {
-       
+       if(path.Count>1)
+        {
+            Debug.Log("In change path color");
+            for(int a=0;a<path.Count;a++)
+            {
+                if (path[a] == gamePointDict[dictColor].startingNode || path[a] == gamePointDict[dictColor].endingNode)
+                    continue;
+                changeTileColor(path[a], color);
+                path[a].isColored = false;
+            }
+        }
+        path.Clear();
     }
 
     /***
      *
      *Check if isAdjacent is the same colored  as current path IF IT IS colored at all. 
      * */
-    public void checkPathValidity()
-    {
-        //if (pathRed[pathRed.Count - 1] != gp.endingNode)
-        if (pathRed[pathRed.Count - 1] != gp.endingNode)
-        {
-            if(pathRed.Count>1)
-            {
-                for (int a = 1; a < pathRed.Count; a++)
-                {
-                    changeTileColor(pathRed[a], Color.white);
-                    pathRed[a].isColored = false;
-                    //Debug.Log("Called Times: " + a);
-                }
-            }
-            
-            pathRed.Clear();
-        }
-    }
 
     void changeTileColor(Node node,Color color)
     {
@@ -243,10 +318,15 @@ public class GridGenerator : MonoBehaviour
     }
     public void changeColorToBlackDebug()
     {
-        Debug.Log("Starting Point Red:" + gamePointDict[Color.red].endingNode.x + " Y: " + gamePointDict[Color.red].endingNode.y);
-        Debug.Log("Number of nodes in path red:" + gamePointDict[Color.red].path.Count);
-        Debug.Log("Number of nodes in path yellow:" + gamePointDict[Color.yellow].path.Count);
-
+        //Debug.Log("Starting Point Red:" + gamePointDict[Color.red].endingNode.x + " Y: " + gamePointDict[Color.red].endingNode.y);
+        //Debug.Log("Number of nodes in path red:" + gamePointDict[Color.red].path.Count);
+        //Debug.Log("Number of nodes in path yellow:" + gamePointDict[Color.yellow].path.Count);
+        for(int i=0;i<noOfColors;i++)
+        {
+            Debug.Log("Game Points Starting X:" + gamePointDict[colors[i]].startingNode.x + "Y: " + gamePointDict[colors[i]].startingNode.y);
+            Debug.Log("Game Points Ending X:" + gamePointDict[colors[i]].endingNode.x + "Y: " + gamePointDict[colors[i]].endingNode.y);
+            gamePointDict[colors[i]].startingNode.renderer.color = Color.black;
+        }
     }
     void generateGamePoint(int startX, int startY, int endX, int endY,Color color)
     {
@@ -257,22 +337,11 @@ public class GridGenerator : MonoBehaviour
         nodes[endX, endY].isGamePoint = true;
         nodes[startX, startY].isColored = true;
         nodes[endX, endY].isColored = true;
-        setHead(startX, startY);
-        setHead(endX, endY);
-     
+        
     }
    
     //stop this much overloading??
-    public void move(int x, int y)
-    {
-
-        //if (isAdjacent(x, y))
-        //{
-        //    nodes[x, y].renderer.color = Color.red;
-        //    nodes[x, y].isColored = true;
-        //}
-
-    }
+    
     bool isRightColored(int x,int y,Color color)
     {
         if (x == rows - 1)
@@ -438,6 +507,7 @@ public class GridGenerator : MonoBehaviour
     }
     public void regenerateValues()
     {
+        gamePointDict.Clear();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
     // Update is called once per frame
@@ -497,7 +567,7 @@ public class GridGenerator : MonoBehaviour
         {
             for (int a = 0; a < path.Count; a++)
             {
-                path[a].renderer.color = colors[currentIndex];
+                //path[a].renderer.color = colors[currentIndex];
                 path[a].isColored = true;
             }
 
@@ -506,6 +576,21 @@ public class GridGenerator : MonoBehaviour
             nodes[point.startingNode.x, point.startingNode.y].isColored = true;
             nodes[point.endingNode.x, point.endingNode.y].isColored = true;
             path.Clear();
+        }
+    }
+    public void resetColoredValues()
+    {
+        for(int i=0;i<rows;i++)
+        {
+            for(int j=0;j<columns;j++)
+            {
+                if (isGamePoint(nodes[i, j]))
+                {
+                    nodes[i, j].isColored = true;
+                    continue;
+                }
+                nodes[i, j].isColored = false;
+            }
         }
     }
     void generateGrid()
@@ -520,6 +605,7 @@ public class GridGenerator : MonoBehaviour
                 float posY = currentColumn * -tileSize;
                 tiles[currentRow, currentColumn].transform.position = new Vector2(posX, posY);
                 nodes[currentRow, currentColumn] = new Node(false, tiles[currentRow, currentColumn].transform.position, tiles[currentRow, currentColumn].GetComponent<SpriteRenderer>(), false, false,false,currentRow,currentColumn);
+               
             }
         }
        
@@ -555,7 +641,7 @@ public class GridGenerator : MonoBehaviour
     }
     public List<Node> generateNeighbours(Node node)
     {
-        Debug.Log("In Generate Neighbours");
+        //Debug.Log("In Generate Neighbours");
         List<Node> neighbours = new List<Node>();
 
         for (int a = -1; a <= 1; a++)
@@ -614,6 +700,9 @@ public class GridGenerator : MonoBehaviour
                 if (compareGamePoints(gamePoints[b], gamepoint))
                     setRandomNumbers(ref gamepoint.startingNode.x, ref gamepoint.startingNode.y, ref gamepoint.endingNode.x, ref gamepoint.endingNode.y);
             }
+            gamepoint.startingNode = nodes[gamepoint.startingNode.x,gamepoint.startingNode.y];
+            gamepoint.endingNode = nodes[gamepoint.endingNode.x, gamepoint.endingNode.y];
+
             gamePoints[a] = gamepoint;
 
         }

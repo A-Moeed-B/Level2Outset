@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-
 public class Node
 {
     public bool isColored;
@@ -16,6 +15,7 @@ public class Node
     public Node parent;
     public Node(bool isColored, Vector3 worldPosition,SpriteRenderer renderer,bool isClicked,bool isGamePoint,bool isHead,int x, int y)
     {
+        this.renderer = new SpriteRenderer();
         this.isColored = isColored;
         this.worldPosition = worldPosition;
         this.renderer = renderer;
@@ -28,6 +28,7 @@ public class Node
     }
     public Node()
     {
+        renderer = new SpriteRenderer();
         isColored = false;
         isClicked = false;
     }
