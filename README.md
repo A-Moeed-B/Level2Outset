@@ -1,4 +1,4 @@
 # Level2|
 
-This is still a work in progress. Grid movement still requires work. Right now it is not generic and works only for predefined color paths. Will geeneralize it in the next few weeks. Procedural Generation is working fine.
+Level2 of the Outset project. Each level has different minigame. This minigame is a procedurally generated puzzle. Default size is 5x5 grid. Puzzle Size can be increased. A* Pathfinding and custom randomization algorithm was used to generate puzzles that always have a solution.
  
